@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+import shutil
 
 STORAGE_DIR = "/home/ashif"
 
@@ -82,6 +83,21 @@ def create_folder():
     directory = safe_join(STORAGE_DIR, subdir, folder_name)
     os.makedirs(directory, exist_ok=True)
     return jsonify({"message": f"Folder {folder_name} created"})
+
+@app.route("/folders/delete", methods=["POST"])
+def delete_folder():
+    subdir = request.args.get("path", "")
+    folder_name = request.json.get("folder_name")
+    if not folder_name:
+        return jsonify({"error": "folder_name required"}), 400
+    # Join base + subdir + folder_name
+    directory = safe_join(STORAGE_DIR, subdir, folder_name)
+    if not os.path.exists(directory):
+        return jsonify({"error": "Folder not found"}), 404
+    if not os.path.isdir(directory):
+        return jsonify({"error": "Not a folder"}), 400
+    shutil.rmtree(directory)  # Recursively delete folder and all contents
+    return jsonify({"message": f"Folder {folder_name} deleted"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
